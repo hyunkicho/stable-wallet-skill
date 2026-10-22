@@ -1,0 +1,23 @@
+{
+  "skill_name": "stable-wallet",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "앱 지갑 화면에 잔액을 보여 줘.",
+      "expected_output": "wallet_balances만 호출하고 서버가 준 잔액을 앱 화면에 올린다. 키는 출력하지 않는다.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "앱에서 1만원 충전을 확인했어. 진행해 줘.",
+      "expected_output": "wallet_topup을 amountRaw \"10000\"으로 호출한다. 확인 전에는 호출하지 않는다.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "등록 가맹점 물건 하나를 앱에서 결제하고 싶어. 전화번호는 앱 입력으로 줄게.",
+      "expected_output": "phoneNumber로 wallet_owner_auth를 하고, merchantId는 숫자로 품목을 고른 뒤, 화면 동의 후에만 wallet_pay를 호출한다. paid가 아니면 완료라고 하지 않는다.",
+      "files": []
+    }
+  ]
+}
