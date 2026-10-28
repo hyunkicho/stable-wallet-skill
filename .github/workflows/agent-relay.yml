@@ -1,9 +1,6 @@
 # DNS가 막힌 에이전트 → GitHub 이슈로 요청 → Actions 러너가 stage API 호출 → 댓글 회신
-# 이슈 제목: [agent]
-# 이슈 본문 예:
-# ```json
-# {"action":"me","apiKey":"kbw_..."}
-# ```
+# 제목: [agent] ...
+# 본문 JSON: {"action":"me","apiKey":"kbw_..."}
 # action: me | kya | balances | merchants
 name: agent-relay
 
@@ -20,81 +17,73 @@ jobs:
     if: startsWith(github.event.issue.title, '[agent]')
     runs-on: ubuntu-latest
     steps:
-      - name: Parse request and call API
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          API_BASE: ${{ vars.KB_WALLET_API_BASE }}
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          import json, os, re, subprocess, sys
-
-          body = os.environ.get("ISSUE_BODY") or ""
-          api_base = (os.environ.get("API_BASE") or "https://kb-stable-wallet-api-stage.vercel.app").rstrip("/")
-
-          raw = None
-          fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", body, re.S)
-          if fence:
-              raw = fence.group(1)
-          else:
-              m = re.search(r"\{.*\}", body, re.S)
-              if m:
-                  raw = m.group(0)
-          if not raw:
-              print("::error::본문에 JSON 요청이 없습니다. 예: {\"action\":\"me\",\"apiKey\":\"kbw_...\"}")
-              sys.exit(1)
-
-          req = json.loads(raw)
-          action = str(req.get("action") or "").strip().lower()
-          api_key = str(req.get("apiKey") or req.get("api_key") or "").strip()
-          if not api_key.startswith("kbw_"):
-              print("::error::apiKey가 없습니다.")
-              sys.exit(1)
-          print(f"::add-mask::{api_key}")
-
-          routes = {
-              "me": ("GET", "/agent/me"),
-              "kya": ("POST", "/agent/kya/request"),
-              "balances": ("GET", "/agent/balances"),
-              "merchants": ("GET", "/agent/merchants"),
-          }
-          if action not in routes:
-              print(f"::error::지원 action: {', '.join(routes)} (받은 값: {action})")
-              sys.exit(1)
-
-          method, path = routes[action]
-          url = api_base + path
-          cmd = [
-              "curl", "-sS", "-m", "30", "-w", "\n__HTTP__%{http_code}",
-              "-X", method, url,
-              "-H", f"Authorization: Bearer {api_key}",
-              "-H", "Content-Type: application/json",
-          ]
-          out = subprocess.check_output(cmd, text=True)
-          text, code = out.rsplit("__HTTP__", 1)
-          code = code.strip()
-          result = {
-              "ok": code.startswith("2"),
-              "action": action,
-              "url": url,
-              "httpStatus": int(code),
-          }
-          try:
-              result["json"] = json.loads(text)
-          except Exception:
-              result["body"] = text.strip()
-
-          with open("relay-result.json", "w", encoding="utf-8") as fh:
-              json.dump(result, fh, ensure_ascii=False, indent=2)
-          print(json.dumps(result, ensure_ascii=False, indent=2))
-          PY
-
-      - name: Comment result
+      - name: Call API and comment
         uses: actions/github-script@v7
+        env:
+          API_BASE: ${{ vars.KB_WALLET_API_BASE }}
         with:
           script: |
-            const fs = require('fs');
-            const result = fs.readFileSync('relay-result.json', 'utf8');
+            const body = context.payload.issue.body || '';
+            const apiBase = (process.env.API_BASE || 'https://kb-stable-wallet-api-stage.vercel.app').replace(/\/$/, '');
+
+            let raw = null;
+            const fence = body.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            if (fence) raw = fence[1];
+            else {
+              const m = body.match(/\{[\s\S]*\}/);
+              if (m) raw = m[0];
+            }
+            if (!raw) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                issue_number: context.issue.number,
+                body: '본문에 JSON이 없습니다. 예: `{"action":"me","apiKey":"kbw_..."}`',
+              });
+              core.setFailed('missing json body');
+              return;
+            }
+
+            const req = JSON.parse(raw);
+            const action = String(req.action || '').trim().toLowerCase();
+            const apiKey = String(req.apiKey || req.api_key || '').trim();
+            if (!apiKey.startsWith('kbw_')) {
+              core.setFailed('missing apiKey');
+              return;
+            }
+            core.setSecret(apiKey);
+
+            const routes = {
+              me: ['GET', '/agent/me'],
+              kya: ['POST', '/agent/kya/request'],
+              balances: ['GET', '/agent/balances'],
+              merchants: ['GET', '/agent/merchants'],
+            };
+            if (!routes[action]) {
+              core.setFailed(`unsupported action: ${action}`);
+              return;
+            }
+            const [method, path] = routes[action];
+            const url = apiBase + path;
+
+            const res = await fetch(url, {
+              method,
+              headers: {
+                authorization: `Bearer ${apiKey}`,
+                'content-type': 'application/json',
+              },
+            });
+            const text = await res.text();
+            let parsed;
+            try { parsed = JSON.parse(text); } catch { parsed = text; }
+            const result = {
+              ok: res.ok,
+              action,
+              url,
+              httpStatus: res.status,
+              json: parsed,
+            };
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.name,
@@ -103,19 +92,13 @@ jobs:
                 '## agent-relay 결과',
                 '',
                 '```json',
-                result.trim(),
+                JSON.stringify(result, null, 2),
                 '```',
                 '',
-                '_데모용 중계입니다. 이슈 본문의 API 키는 스크러브됩니다._',
+                '_데모용 중계. 본문 API 키는 스크러브됩니다._',
               ].join('\n'),
             });
 
-      - name: Scrub apiKey from issue body
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = context.payload.issue.body || '';
             const scrubbed = body.replace(/kbw_[A-Za-z0-9_-]+/g, 'kbw_***');
             if (scrubbed !== body) {
               await github.rest.issues.update({
@@ -125,3 +108,5 @@ jobs:
                 body: scrubbed,
               });
             }
+
+            if (!res.ok) core.setFailed(`API ${res.status}`);
