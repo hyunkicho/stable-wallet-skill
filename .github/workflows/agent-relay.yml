@@ -1,6 +1,7 @@
 # DNS가 막힌 에이전트 → GitHub 이슈로 요청 → Actions 러너가 stage API 호출 → 댓글 회신
 # 제목: [agent] ...
-# 본문 JSON: {"action":"me","apiKey":"kbw_..."}
+# 본문 JSON: {"action":"me","keyId":"Uxxxxxxxx-1"}
+# 실제 kbw_ 키는 repo secret WALLET_AGENT_KEYS (JSON map) 에만 둔다.
 # action: me | kya | balances | merchants
 name: agent-relay
 
@@ -21,10 +22,13 @@ jobs:
         uses: actions/github-script@v7
         env:
           API_BASE: ${{ vars.KB_WALLET_API_BASE }}
+          WALLET_AGENT_KEYS: ${{ secrets.WALLET_AGENT_KEYS }}
         with:
           script: |
             const body = context.payload.issue.body || '';
             const apiBase = (process.env.API_BASE || 'https://kb-stable-wallet-api-stage.vercel.app').replace(/\/$/, '');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
 
             let raw = null;
             const fence = body.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -33,15 +37,10 @@ jobs:
               const m = body.match(/\{[\s\S]*\}/);
               if (m) raw = m[0];
             }
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
             if (!raw) {
               await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: context.issue.number,
-                body: '본문에 JSON이 없습니다. 예: `{"action":"me","apiKey":"kbw_..."}`',
+                owner, repo, issue_number: context.issue.number,
+                body: '본문에 JSON이 없습니다. 예: `{"action":"me","keyId":"Uxxxxxxxx-1"}`',
               });
               core.setFailed('missing json body');
               return;
@@ -49,9 +48,36 @@ jobs:
 
             const req = JSON.parse(raw);
             const action = String(req.action || '').trim().toLowerCase();
-            const apiKey = String(req.apiKey || req.api_key || '').trim();
+            const keyId = String(req.keyId || req.publicId || '').trim();
+
+            let keys = {};
+            try {
+              keys = JSON.parse(process.env.WALLET_AGENT_KEYS || '{}');
+            } catch {
+              core.setFailed('WALLET_AGENT_KEYS secret is not valid JSON');
+              return;
+            }
+
+            let apiKey = '';
+            if (keyId && keys[keyId]) {
+              apiKey = String(keys[keyId]);
+            } else if (String(req.apiKey || '').startsWith('kbw_')) {
+              // 비상용. 공개 이슈에 키가 남으므로 쓰지 않는 것이 좋다.
+              apiKey = String(req.apiKey);
+              core.warning('apiKey in issue body is deprecated; register keyId into WALLET_AGENT_KEYS');
+            }
+
             if (!apiKey.startsWith('kbw_')) {
-              core.setFailed('missing apiKey');
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: context.issue.number,
+                body: [
+                  'API 키를 찾지 못했습니다.',
+                  '',
+                  `- keyId: \`${keyId || '(없음)'}\``,
+                  '- 운영자가 `scripts/register-agent-key.sh` 로 `WALLET_AGENT_KEYS` secret에 등록해야 합니다.',
+                ].join('\n'),
+              });
+              core.setFailed('missing api key for keyId');
               return;
             }
             core.setSecret(apiKey);
@@ -82,33 +108,28 @@ jobs:
             const result = {
               ok: res.ok,
               action,
+              keyId: keyId || null,
               url,
               httpStatus: res.status,
               json: parsed,
             };
 
             await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: context.issue.number,
+              owner, repo, issue_number: context.issue.number,
               body: [
                 '## agent-relay 결과',
                 '',
                 '```json',
                 JSON.stringify(result, null, 2),
                 '```',
-                '',
-                '_데모용 중계. 본문 API 키는 스크러브됩니다._',
               ].join('\n'),
             });
 
+            // 본문에 실수로 키가 있으면 가린다
             const scrubbed = body.replace(/kbw_[A-Za-z0-9_-]+/g, 'kbw_***');
             if (scrubbed !== body) {
               await github.rest.issues.update({
-                owner,
-                repo,
-                issue_number: context.issue.number,
-                body: scrubbed,
+                owner, repo, issue_number: context.issue.number, body: scrubbed,
               });
             }
 
