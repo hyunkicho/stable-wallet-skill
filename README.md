@@ -15,14 +15,21 @@ API 키: kbw_...
 
 ## API 베이스
 
-외부 에이전트는 아래를 **우선** 쓰세요. (`*.vercel.app` DNS가 깨지는 런타임 대비)
+기본(예전에 쓰던 주소):
 
-- `https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1`
-
-대안(같은 `/agent/*` 경로):
-
-- `https://kb-stable-wallet-stage.vercel.app`
 - `https://kb-stable-wallet-api-stage.vercel.app`
+
+예시:
+
+```text
+GET  https://kb-stable-wallet-api-stage.vercel.app/agent/me
+POST https://kb-stable-wallet-api-stage.vercel.app/agent/kya/request
+```
+
+`*.vercel.app` DNS만 실패할 때 대체(전체 URL, 경로를 임의로 합치지 말 것):
+
+- `https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1/agent/me`
+- `https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1/agent/kya/request`
 
 모든 호출에 `Authorization: Bearer <API 키>`를 붙입니다. 키는 답장에 다시 쓰지 않습니다.
 
