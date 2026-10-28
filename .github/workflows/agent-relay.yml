@@ -1,8 +1,7 @@
-# DNS가 막힌 에이전트 → GitHub 이슈로 요청 → Actions 러너가 stage API 호출 → 댓글 회신
+# DNS가 막힌 에이전트 → GitHub 이슈 → Actions가 stage /agent/relay 호출 → 댓글 회신
 # 제목: [agent] ...
-# 본문 JSON: {"action":"me","keyId":"Uxxxxxxxx-1"}
-# 실제 kbw_ 키는 repo secret WALLET_AGENT_KEYS (JSON map) 에만 둔다.
-# action: me | kya | balances | merchants
+# 본문: {"action":"me","keyId":"Uxxxxxxxx-1"}
+# 시크릿: AGENT_RELAY_SECRET (유저 kbw_ 아님. API와 동일한 서비스 시크릿 1개)
 name: agent-relay
 
 on:
@@ -18,17 +17,24 @@ jobs:
     if: startsWith(github.event.issue.title, '[agent]')
     runs-on: ubuntu-latest
     steps:
-      - name: Call API and comment
+      - name: Call /agent/relay and comment
         uses: actions/github-script@v7
         env:
           API_BASE: ${{ vars.KB_WALLET_API_BASE }}
-          WALLET_AGENT_KEYS: ${{ secrets.WALLET_AGENT_KEYS }}
+          AGENT_RELAY_SECRET: ${{ secrets.AGENT_RELAY_SECRET }}
         with:
           script: |
             const body = context.payload.issue.body || '';
             const apiBase = (process.env.API_BASE || 'https://kb-stable-wallet-api-stage.vercel.app').replace(/\/$/, '');
+            const relaySecret = process.env.AGENT_RELAY_SECRET || '';
             const owner = context.repo.owner;
             const repo = context.repo.repo;
+
+            if (!relaySecret) {
+              core.setFailed('AGENT_RELAY_SECRET is not set');
+              return;
+            }
+            core.setSecret(relaySecret);
 
             let raw = null;
             const fence = body.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -49,69 +55,32 @@ jobs:
             const req = JSON.parse(raw);
             const action = String(req.action || '').trim().toLowerCase();
             const keyId = String(req.keyId || req.publicId || '').trim();
-
-            let keys = {};
-            try {
-              keys = JSON.parse(process.env.WALLET_AGENT_KEYS || '{}');
-            } catch {
-              core.setFailed('WALLET_AGENT_KEYS secret is not valid JSON');
-              return;
-            }
-
-            let apiKey = '';
-            if (keyId && keys[keyId]) {
-              apiKey = String(keys[keyId]);
-            } else if (String(req.apiKey || '').startsWith('kbw_')) {
-              // 비상용. 공개 이슈에 키가 남으므로 쓰지 않는 것이 좋다.
-              apiKey = String(req.apiKey);
-              core.warning('apiKey in issue body is deprecated; register keyId into WALLET_AGENT_KEYS');
-            }
-
-            if (!apiKey.startsWith('kbw_')) {
+            if (!keyId || !['me', 'kya', 'balances', 'merchants'].includes(action)) {
               await github.rest.issues.createComment({
                 owner, repo, issue_number: context.issue.number,
-                body: [
-                  'API 키를 찾지 못했습니다.',
-                  '',
-                  `- keyId: \`${keyId || '(없음)'}\``,
-                  '- 운영자가 `scripts/register-agent-key.sh` 로 `WALLET_AGENT_KEYS` secret에 등록해야 합니다.',
-                ].join('\n'),
+                body: 'action(me|kya|balances|merchants)과 keyId가 필요합니다. API 비밀키(kbw_)는 넣지 마세요.',
               });
-              core.setFailed('missing api key for keyId');
+              core.setFailed('invalid request');
               return;
             }
-            core.setSecret(apiKey);
 
-            const routes = {
-              me: ['GET', '/agent/me'],
-              kya: ['POST', '/agent/kya/request'],
-              balances: ['GET', '/agent/balances'],
-              merchants: ['GET', '/agent/merchants'],
-            };
-            if (!routes[action]) {
-              core.setFailed(`unsupported action: ${action}`);
-              return;
-            }
-            const [method, path] = routes[action];
-            const url = apiBase + path;
-
+            const url = `${apiBase}/agent/relay`;
             const res = await fetch(url, {
-              method,
+              method: 'POST',
               headers: {
-                authorization: `Bearer ${apiKey}`,
+                authorization: `Bearer ${relaySecret}`,
                 'content-type': 'application/json',
               },
+              body: JSON.stringify({ action, keyId }),
             });
             const text = await res.text();
             let parsed;
             try { parsed = JSON.parse(text); } catch { parsed = text; }
             const result = {
               ok: res.ok,
-              action,
-              keyId: keyId || null,
-              url,
               httpStatus: res.status,
-              json: parsed,
+              url,
+              response: parsed,
             };
 
             await github.rest.issues.createComment({
@@ -125,7 +94,6 @@ jobs:
               ].join('\n'),
             });
 
-            // 본문에 실수로 키가 있으면 가린다
             const scrubbed = body.replace(/kbw_[A-Za-z0-9_-]+/g, 'kbw_***');
             if (scrubbed !== body) {
               await github.rest.issues.update({
