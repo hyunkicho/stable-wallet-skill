@@ -11,10 +11,9 @@
 API 키: kbw_...
 ```
 
-## 호출 URL (DNS)
+## 호출 URL
 
-일부 에이전트 런타임은 `*.vercel.app` DNS가 실패합니다 (`NameResolutionError` / `Temporary failure in name resolution`).  
-그래서 **아래 전체 URL만** 쓰세요. 잘라 붙이지 마세요.
+기본(전체 URL, 잘라 붙이지 말 것):
 
 ```text
 GET  https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1/agent/me
@@ -25,6 +24,12 @@ POST https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1/agent/payments
 ```
 
 모든 호출에 `Authorization: Bearer <API 키>`를 붙입니다. 키는 답장에 다시 쓰지 않습니다.
+
+## DNS가 vercel·supabase 둘 다 실패하면
+
+`NameResolutionError` / `Temporary failure in name resolution`이 **두 호스트 모두**에서 나면, API 장애가 아니라 **그 실행 환경에 일반 아웃바운드 DNS/HTTPS가 없습니다.** URL을 더 바꿔도 소용 없습니다.
+
+그때는 HTTP 직접 호출을 멈추고, 네트워크가 되는 머신에서 MCP(`kb-wallet-mcp-server`)로 붙이거나, 아웃바운드가 열린 에이전트 런타임을 쓰세요.
 
 ## 에이전트가 할 일 (요약)
 
