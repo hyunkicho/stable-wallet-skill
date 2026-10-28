@@ -33,10 +33,13 @@ jobs:
               const m = body.match(/\{[\s\S]*\}/);
               if (m) raw = m[0];
             }
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
             if (!raw) {
               await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.name,
+                owner,
+                repo,
                 issue_number: context.issue.number,
                 body: '본문에 JSON이 없습니다. 예: `{"action":"me","apiKey":"kbw_..."}`',
               });
@@ -85,8 +88,8 @@ jobs:
             };
 
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.name,
+              owner,
+              repo,
               issue_number: context.issue.number,
               body: [
                 '## agent-relay 결과',
@@ -102,8 +105,8 @@ jobs:
             const scrubbed = body.replace(/kbw_[A-Za-z0-9_-]+/g, 'kbw_***');
             if (scrubbed !== body) {
               await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.name,
+                owner,
+                repo,
                 issue_number: context.issue.number,
                 body: scrubbed,
               });
