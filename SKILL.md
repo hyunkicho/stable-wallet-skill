@@ -10,11 +10,14 @@ description: >
 
 운영자가 API 키와 이 스킬만 준 경우, 그 키로 아래를 직접 호출해 주세요.
 
-**API 베이스(우선):** `https://kb-stable-wallet-stage.vercel.app`  
-(지갑 stage와 같은 호스트입니다. `/agent/*`가 API로 연결됩니다.)
+**API 베이스(우선):** `https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1`  
+(외부에서 `*.vercel.app` DNS가 실패할 때를 대비한 공개 프록시입니다. 경로 `/agent/*`는 그대로입니다.)
 
-**대안:** `https://kb-stable-wallet-api-stage.vercel.app`  
-DNS가 안 되면 우선 베이스로 바꿔 같은 경로를 다시 호출해 주세요.
+**대안(같은 경로):**
+- `https://kb-stable-wallet-stage.vercel.app`
+- `https://kb-stable-wallet-api-stage.vercel.app`
+
+우선 베이스로 DNS·연결이 안 되면 대안을 순서대로 시도해 주세요.
 
 모든 호출에 `Authorization: Bearer <대화에 있는 키>`를 붙여 주세요. 키는 답장에 다시 쓰지 말아 주세요.
 

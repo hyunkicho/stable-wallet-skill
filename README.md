@@ -15,12 +15,13 @@ API 키: kbw_...
 
 ## API 베이스
 
-우선 이 주소를 써 주세요. 지갑 stage 웹과 같은 호스트라 DNS가 잘 되는 편입니다.
+외부 에이전트는 아래를 **우선** 쓰세요. (`*.vercel.app` DNS가 깨지는 런타임 대비)
+
+- `https://udvmadzdrzdvmrdfblak.supabase.co/functions/v1`
+
+대안(같은 `/agent/*` 경로):
 
 - `https://kb-stable-wallet-stage.vercel.app`
-
-직접 API 호스트도 같습니다.
-
 - `https://kb-stable-wallet-api-stage.vercel.app`
 
 모든 호출에 `Authorization: Bearer <API 키>`를 붙입니다. 키는 답장에 다시 쓰지 않습니다.
@@ -38,18 +39,5 @@ API 키: kbw_...
 
 ## 앱이 할 일
 
-- 승인 전에는 결제 버튼을 열지 않습니다.
-- 잔액, 남은 한도, 가맹점, 품목, 수량, 합계는 앱 화면에 보여 줍니다.
-- 한도 안의 결제는 화면 확인 없이 진행합니다. 한도를 넘는 금액은 막습니다.
-- 집금 주소는 결제 결과에 포함된 값만 보여 주고, 앱이 그 주소로 다시 보내지 않습니다.
-
-## 설치
-
-이 폴더를 에이전트 스킬 디렉터리로 복사합니다. `SKILL.md`가 진입점입니다.
-
-키는 앱이 이미 가집니다. 이 스킬로 키를 발급하지 않습니다.
-
-## DNS / 연결이 안 될 때
-
-1. 베이스를 `https://kb-stable-wallet-stage.vercel.app`로 바꿔 같은 경로(`/agent/me` 등)를 다시 호출해 보세요.
-2. 그래도 실패하면 `https://kb-stable-wallet-api-stage.vercel.app/health`가 브라우저에서 `{"ok":true}`인지 확인해 주세요.
+- 키 발급 화면에 스킬 주소와 API 키만 보여 줍니다.
+- 충전·한도·승인은 회원 지갑 화면에서 합니다.
