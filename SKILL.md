@@ -8,7 +8,17 @@ description: >
 
 # 스테이블 월렛
 
-운영자가 API 키와 이 스킬만 준 경우, 그 키로 아래를 직접 호출해 주세요. 베이스 주소는 `https://kb-stable-wallet-api-stage.vercel.app`입니다. 모든 호출에 `Authorization: Bearer <대화에 있는 키>`를 붙여 주세요. 키는 답장에 다시 쓰지 말아 주세요.
+운영자가 API 키와 이 스킬만 준 경우, 그 키로 아래를 직접 호출해 주세요.
+
+**API 베이스(우선):** `https://kb-stable-wallet-stage.vercel.app`  
+(지갑 stage와 같은 호스트입니다. `/agent/*`가 API로 연결됩니다.)
+
+**대안:** `https://kb-stable-wallet-api-stage.vercel.app`  
+DNS가 안 되면 우선 베이스로 바꿔 같은 경로를 다시 호출해 주세요.
+
+모든 호출에 `Authorization: Bearer <대화에 있는 키>`를 붙여 주세요. 키는 답장에 다시 쓰지 말아 주세요.
+
+운영자가 주는 문구는 보통 스킬 주소와 API 키뿐입니다. 순서는 이 파일과 README를 따릅니다.
 
 ## 가장 중요 — 승인(인증) 요청
 
@@ -16,7 +26,7 @@ description: >
 
 - 이 요청의 공식 이름은 KYA이고, HTTP로는 `POST /agent/kya/request`입니다.
 - 사용자가 “인증해 줘”, “승인 요청해 줘”, “KYA 보내 줘”라고 해도 같은 호출입니다.
-- 본문 없이 `POST https://kb-stable-wallet-api-stage.vercel.app/agent/kya/request` 한 번이면 됩니다.
+- 본문 없이 `POST {API 베이스}/agent/kya/request` 한 번이면 됩니다.
 - 보낸 뒤에는 멈추고, 회원에게 개인 지갑 → 에이전트 메뉴에서 충전 금액과 결제 한도를 넣고 승인해 달라고 안내해 주세요.
 
 ## 순서
