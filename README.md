@@ -1,63 +1,42 @@
 # stable-wallet
 
-스테이블코인 지갑 스킬 + **로컬 MCP** + **GitHub Actions 중계**.
+스킬 + **Cloudflare Workers 원격 MCP** (무료).
 
 ## 운영자가 에이전트에 주는 것
 
-DNS 막힌 외부 AI (Actions 중계):
-
 ```text
 스킬: https://github.com/hyunkicho/stable-wallet-skill
-키 번호(keyId): Uxxxxxxxx-1
-```
-
-로컬 Cursor MCP (PC 켤 때):
-
-```text
-스킬: https://github.com/hyunkicho/stable-wallet-skill
+MCP: https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp
 API 키: kbw_...
 ```
 
-> Actions 중계에는 `kbw_`를 넣지 마세요. 유저마다 Secret 등록도 하지 않습니다.
+MCP 연결 시 `Authorization: Bearer kbw_...` 헤더를 붙입니다.
 
-## 1) 로컬 Cursor + MCP
+## 원격 MCP
 
-```bash
-cd mcp && npm install
-KB_WALLET_API_KEY=kbw_... npm start
-```
-
-## 2) GitHub Actions 중계 (DNS 막힌 외부 AI)
-
-### 운영자 준비 (한 번만)
-
-API·Actions가 공유하는 **서비스 시크릿 1개**:
+경로: `mcp-remote/`
 
 ```bash
-./scripts/set-relay-secret.sh
-# 출력된 값을 Vercel kb-stable-wallet-api 의 AGENT_RELAY_SECRET 에도 동일하게 넣는다
+cd mcp-remote && npm install && npx wrangler deploy
 ```
 
-유저 키를 GitHub에 올릴 필요 없음.
+현재 배포: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp`  
+(임시 Cloudflare 계정으로 올렸으면 대시보드 claim 후 영구화. claim 전 URL은 60분 후 삭제될 수 있음.)
 
-### 에이전트
+Worker는 `Authorization`의 `kbw_` 키로 stage API `/agent/*`를 호출합니다.  
+환경변수 `KB_WALLET_API_BASE` 기본값: `https://kb-stable-wallet-api-stage.vercel.app`
 
-이슈 제목 `[agent] me`, 본문:
+## 로컬 stdio MCP (선택)
 
-```json
-{"action":"me","keyId":"Uxxxxxxxx-1"}
-```
+`mcp/` — Cursor 로컬용. PC가 켜져 있을 때만.
 
-`action`: `me` | `kya` | `balances` | `merchants`  
-댓글에 API 결과가 옵니다.
+## GitHub Actions 이슈 중계
 
-## 3) 직접 HTTP
-
-네트워크 되는 런타임만. URL은 `SKILL.md` 참고.
+쓰지 않습니다. (UX·보안상 폐기)
 
 ## 에이전트 요약
 
-1. `me` → `kyaStatus`
-2. 미승인이면 `kya` 한 번 → 회원 승인 안내 후 멈춤
-3. 승인 후 한도 안 결제만
+1. `wallet_me` → `kyaStatus`
+2. 미승인이면 `wallet_kya_request` 한 번 → 회원 승인 안내
+3. 승인 후 한도 안 `wallet_pay`
 4. topup / owner auth 금지

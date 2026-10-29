@@ -1,104 +1,12 @@
-# DNS가 막힌 에이전트 → GitHub 이슈 → Actions가 stage /agent/relay 호출 → 댓글 회신
-# 제목: [agent] ...
-# 본문: {"action":"me","keyId":"Uxxxxxxxx-1"}
-# 시크릿: AGENT_RELAY_SECRET (유저 kbw_ 아님. API와 동일한 서비스 시크릿 1개)
-name: agent-relay
+# 폐기: GitHub 이슈 중계는 사용하지 않습니다.
+# 대신 Cloudflare Workers 원격 MCP (mcp-remote/) 를 사용합니다.
+name: agent-relay-disabled
 
 on:
-  issues:
-    types: [opened]
-
-permissions:
-  issues: write
-  contents: read
+  workflow_dispatch:
 
 jobs:
-  relay:
-    if: startsWith(github.event.issue.title, '[agent]')
+  noop:
     runs-on: ubuntu-latest
     steps:
-      - name: Call /agent/relay and comment
-        uses: actions/github-script@v7
-        env:
-          API_BASE: ${{ vars.KB_WALLET_API_BASE }}
-          AGENT_RELAY_SECRET: ${{ secrets.AGENT_RELAY_SECRET }}
-        with:
-          script: |
-            const body = context.payload.issue.body || '';
-            const apiBase = (process.env.API_BASE || 'https://kb-stable-wallet-api-stage.vercel.app').replace(/\/$/, '');
-            const relaySecret = process.env.AGENT_RELAY_SECRET || '';
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            if (!relaySecret) {
-              core.setFailed('AGENT_RELAY_SECRET is not set');
-              return;
-            }
-            core.setSecret(relaySecret);
-
-            let raw = null;
-            const fence = body.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-            if (fence) raw = fence[1];
-            else {
-              const m = body.match(/\{[\s\S]*\}/);
-              if (m) raw = m[0];
-            }
-            if (!raw) {
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: context.issue.number,
-                body: '본문에 JSON이 없습니다. 예: `{"action":"me","keyId":"Uxxxxxxxx-1"}`',
-              });
-              core.setFailed('missing json body');
-              return;
-            }
-
-            const req = JSON.parse(raw);
-            const action = String(req.action || '').trim().toLowerCase();
-            const keyId = String(req.keyId || req.publicId || '').trim();
-            if (!keyId || !['me', 'kya', 'balances', 'merchants'].includes(action)) {
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: context.issue.number,
-                body: 'action(me|kya|balances|merchants)과 keyId가 필요합니다. API 비밀키(kbw_)는 넣지 마세요.',
-              });
-              core.setFailed('invalid request');
-              return;
-            }
-
-            const url = `${apiBase}/agent/relay`;
-            const res = await fetch(url, {
-              method: 'POST',
-              headers: {
-                authorization: `Bearer ${relaySecret}`,
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({ action, keyId }),
-            });
-            const text = await res.text();
-            let parsed;
-            try { parsed = JSON.parse(text); } catch { parsed = text; }
-            const result = {
-              ok: res.ok,
-              httpStatus: res.status,
-              url,
-              response: parsed,
-            };
-
-            await github.rest.issues.createComment({
-              owner, repo, issue_number: context.issue.number,
-              body: [
-                '## agent-relay 결과',
-                '',
-                '```json',
-                JSON.stringify(result, null, 2),
-                '```',
-              ].join('\n'),
-            });
-
-            const scrubbed = body.replace(/kbw_[A-Za-z0-9_-]+/g, 'kbw_***');
-            if (scrubbed !== body) {
-              await github.rest.issues.update({
-                owner, repo, issue_number: context.issue.number, body: scrubbed,
-              });
-            }
-
-            if (!res.ok) core.setFailed(`API ${res.status}`);
+      - run: echo "agent-relay disabled; use remote MCP"
