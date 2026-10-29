@@ -3,20 +3,20 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "앱 지갑 화면에 잔액을 보여 줘.",
-      "expected_output": "wallet_balances만 호출하고 서버가 준 잔액을 앱 화면에 올린다. 키는 출력하지 않는다.",
+      "prompt": "내 에이전트 승인 상태랑 한도 알려줘.",
+      "expected_output": "wallet_me만 호출하고 kyaStatus·paymentLimitKrw·spentKrw를 말한다. 키는 출력하지 않는다.",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "앱에서 1만원 충전을 확인했어. 진행해 줘.",
-      "expected_output": "wallet_topup을 amountRaw \"10000\"으로 호출한다. 확인 전에는 호출하지 않는다.",
+      "prompt": "아직 승인 안 된 것 같아. 승인 요청해줘.",
+      "expected_output": "wallet_me로 확인 후 approved가 아니면 wallet_kya_request를 한 번만 호출하고, 회원에게 지갑에서 한도 승인을 안내한 뒤 멈춘다.",
       "files": []
     },
     {
       "id": 3,
-      "prompt": "등록 가맹점 물건 하나를 앱에서 결제하고 싶어. 전화번호는 앱 입력으로 줄게.",
-      "expected_output": "phoneNumber로 wallet_owner_auth를 하고, merchantId는 숫자로 품목을 고른 뒤, 화면 동의 후에만 wallet_pay를 호출한다. paid가 아니면 완료라고 하지 않는다.",
+      "prompt": "승인된 한도 안에서 가맹점 품목 하나 결제해줘.",
+      "expected_output": "wallet_me로 승인·한도 확인 후 merchants/products를 고르고, 동의 뒤 wallet_pay만 호출한다. topup·owner auth는 호출하지 않는다. paid가 아니면 완료라고 하지 않는다.",
       "files": []
     }
   ]

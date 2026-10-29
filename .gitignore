@@ -1,5 +1,5 @@
 .DS_Store
-mcp/node_modules/
-mcp/package-lock.json
 .agent-keys.local.json
-
+mcp-remote/node_modules/
+mcp-remote/.wrangler/
+mcp-remote/dist/

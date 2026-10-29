@@ -20,19 +20,11 @@ MCP 연결 시 `Authorization: Bearer kbw_...` 헤더를 붙입니다.
 cd mcp-remote && npm install && npx wrangler deploy
 ```
 
-현재 배포: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp`  
-(임시 Cloudflare 계정으로 올렸으면 대시보드 claim 후 영구화. claim 전 URL은 60분 후 삭제될 수 있음.)
+배포 URL: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp`  
+Cloudflare 계정: **Indecisive Fold**
 
 Worker는 `Authorization`의 `kbw_` 키로 stage API `/agent/*`를 호출합니다.  
-환경변수 `KB_WALLET_API_BASE` 기본값: `https://kb-stable-wallet-api-stage.vercel.app`
-
-## 로컬 stdio MCP (선택)
-
-`mcp/` — Cursor 로컬용. PC가 켜져 있을 때만.
-
-## GitHub Actions 이슈 중계
-
-쓰지 않습니다. (UX·보안상 폐기)
+`KB_WALLET_API_BASE` 기본값: `https://kb-stable-wallet-api-stage.vercel.app`
 
 ## 에이전트 요약
 

@@ -15,9 +15,8 @@ description: >
 
 - URL: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp`
 - 헤더: `Authorization: Bearer <대화에 있는 kbw_ 키>`
-- Cloudflare Workers 무료 원격 MCP. DNS가 막힌 런타임도 여기로 도구를 호출한다.
 - 도구: `wallet_me` → (미승인이면) `wallet_kya_request` → 승인 후 `wallet_balances` / `wallet_merchants` / `wallet_products` / `wallet_pay`
-- `topup` / `owner auth` 도구는 없습니다. GitHub 이슈 중계는 쓰지 마세요.
+- `topup` / `owner auth` 도구는 없습니다.
 
 ## MCP가 없을 때만 HTTP
 
@@ -47,4 +46,4 @@ POST https://kb-stable-wallet-api-stage.vercel.app/agent/payments
 
 ## 하지 않는 일
 
-키 발급, 출금, 관리자, 회원 이체, 가맹점 QR, 에이전트 직접 충전, GitHub 이슈 중계.
+키 발급, 출금, 관리자, 회원 이체, 가맹점 QR, 에이전트 직접 충전.
