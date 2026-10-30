@@ -1,15 +1,15 @@
-# MCP 도구
+# 도구 / HTTP
 
-원격 MCP: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp`  
-헤더: `Authorization: Bearer kbw_...`
+MCP: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp` + `Authorization: Bearer kbw_...`  
+HTTP 베이스: `https://kb-stable-wallet-api-stage.vercel.app` + 같은 Bearer
 
-| 도구 | 인자 | 비고 |
+| 이름 | HTTP | 인자 |
 |---|---|---|
-| `wallet_me` | 없음 | `kyaStatus`, 한도·사용액 |
-| `wallet_kya_request` | 없음 | 미승인일 때만 한 번 |
-| `wallet_balances` | 없음 | |
-| `wallet_merchants` | 없음 | |
-| `wallet_products` | `merchantId` | 양의 정수 |
-| `wallet_pay` | `merchantId`, `productId`, `quantity?`, `idempotencyKey` | 한도 안만. quantity 기본 1 |
+| `wallet_me` | `GET /agent/me` | 없음 |
+| `wallet_kya_request` | `POST /agent/kya/request` | 없음. **회원 한도 승인 요청** (주소 KYT 아님) |
+| `wallet_balances` | `GET /agent/balances` | 없음 |
+| `wallet_merchants` | `GET /agent/merchants` | 없음 |
+| `wallet_products` | `GET /agent/merchants/{id}/products` | `merchantId` 양의 정수 |
+| `wallet_pay` | `POST /agent/payments` | `merchantId`, `productId`, `quantity?`, `idempotencyKey` uuid |
 
-충전·주인 인증 도구는 없다. `paid`가 아니면 완료로 말하지 않는다.
+수신 지갑 주소·체인·코인 송금 없음.
