@@ -69,9 +69,15 @@ export class WalletClient {
   }
 }
 
+/** ChatGPT 등: 연결은 무인증. 키는 Bearer 또는 도구 인자 apiKey. */
+export function normalizeApiKey(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const token = value.trim();
+  return token.startsWith('kbw_') ? token : null;
+}
+
 export function bearerFromRequest(request: Request): string | null {
   const header = request.headers.get('authorization') ?? '';
   if (!header.toLowerCase().startsWith('bearer ')) return null;
-  const token = header.slice('Bearer '.length).trim();
-  return token.startsWith('kbw_') ? token : null;
+  return normalizeApiKey(header.slice('Bearer '.length));
 }

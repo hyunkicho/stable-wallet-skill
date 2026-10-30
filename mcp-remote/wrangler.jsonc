@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "stable-wallet-mcp",
+  "account_id": "3ed82c41e4ab6bc9d961bd02b7260b58",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-02",
   "compatibility_flags": ["nodejs_compat"],

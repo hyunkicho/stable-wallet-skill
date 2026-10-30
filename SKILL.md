@@ -24,7 +24,8 @@ description: >
 ### 1) 원격 MCP (있으면 우선)
 
 - URL: `https://stable-wallet-mcp.indecisive-fold.workers.dev/mcp`
-- 헤더: `Authorization: Bearer <kbw_ 키>`
+- **연결 인증: 없음 (No authentication / OAuth 아님).** ChatGPT는 이 옵션으로 추가.
+- 키: 도구 인자 `apiKey`에 `kbw_...` (또는 클라이언트가 `Authorization: Bearer` 지원하면 헤더)
 - 도구: `wallet_me` / `wallet_kya_request` / `wallet_balances` / `wallet_merchants` / `wallet_products` / `wallet_pay`
 
 ### 2) HTTP (MCP를 못 쓰면)
