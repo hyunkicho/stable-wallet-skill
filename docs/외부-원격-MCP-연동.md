@@ -1,6 +1,6 @@
-# SBI / 외부 개발자 — 원격 MCP 연동 안내 (stage)
+# 외부 연동 — 원격 MCP 안내 (stage)
 
-대상: 우리 월렛 **바깥**에서 AI·봇·백엔드를 만들고, 공개 원격 MCP로 에이전트 결제 흐름을 붙이는 팀.
+대상: 월렛 **바깥**에서 AI·봇·백엔드를 만들고, 공개 원격 MCP로 에이전트 결제 흐름을 붙이는 팀.
 
 - 스킬(절차): https://github.com/hyunkicho/stable-wallet-skill  
 - 원문: https://raw.githubusercontent.com/hyunkicho/stable-wallet-skill/main/SKILL.md  
@@ -22,7 +22,7 @@
 ## 2. 아키텍처 (외부 서비스 기준)
 
 ```
-[SBI 앱 / 내부 LLM / ChatGPT·Cursor]
+[외부 앱 / 내부 LLM / ChatGPT·Cursor]
         │  MCP tools/call (apiKey=kbw_… 또는 귀사 세션→키 조회)
         ▼
 [원격 MCP · Cloudflare Workers]  ← 귀사가 호스팅할 필요 없음
@@ -37,7 +37,7 @@
 권장 제품 형태 (키 복붙 최소화):
 
 1. **데모**: 테스트 `kbw_` + MCP + 스킬.  
-2. **연동**: SBI BFF가 키/세션을 보관 → 봇은 SBI API만 호출 → BFF가 MCP 또는 HTTP로 월렛 호출.  
+2. **연동**: 외부 BFF가 키/세션을 보관 → 봇은 외부 API만 호출 → BFF가 MCP 또는 HTTP로 월렛 호출.  
 3. **본연동 후보**: 단기 에이전트 세션 토큰(채팅에 raw `kbw_` 비노출). 별도 협의.
 
 ## 3. MCP 연결 체크리스트
@@ -115,16 +115,16 @@ LLM 샌드박스 DNS가 막히면 이 URL은 실패하는 것이 정상입니다
 | `kyaStatus` ≠ approved | 회원 지갑에서 한도 승인 전 |
 | `/test`는 되는데 채팅만 실패 | 채팅 쪽에 MCP 미등록 또는 DNS |
 
-## 7. 보안·운영 (SBI에 부탁)
+## 7. 보안·운영
 
 - 워크스페이스 **공용 MCP 1회 연결** (개인마다 채팅 설정에 의존하지 않기)  
 - 생산 경로에서 채팅으로 raw `kbw_` 전달 지양 → BFF/단기 세션  
 - 키·응답 로그 마스킹  
 - stage 키와 live 키 분리 (live는 별도 협의)
 
-## 8. 우리가 제공하는 것 / 귀사가 하는 것
+## 8. 제공 / 외부 팀
 
-| 제공 (KB 측) | SBI 측 |
+| 제공 (월렛 측) | 외부 팀 |
 |---|---|
 | 공개 스킬·원격 MCP·`/test` | MCP를 개발·데모 환경에 연결 |
 | stage 키 발급 경로(지갑/관리자) | 봇·앱 UX, BFF, 키/세션 보관 |

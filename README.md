@@ -11,7 +11,7 @@ API 키: kbw_...
 절차·금지사항은 `SKILL.md`가 진실 공급원이다.  
 KYA = 회원 한도 승인 요청 (상대 지갑 주소 검사가 아님).
 
-**SBI / 외부 연동 안내:** [docs/SBI-원격-MCP-연동.md](./docs/SBI-원격-MCP-연동.md)
+**외부 연동 안내:** [docs/외부-원격-MCP-연동.md](./docs/외부-원격-MCP-연동.md)
 
 ## ChatGPT MCP
 
