@@ -165,10 +165,18 @@ export default {
       });
     }
 
-    // OAuth 메타는 없음 → 404. ChatGPT는 "No authentication"으로 연결.
     const url = new URL(request.url);
+
+    // OAuth 메타는 없음 → 404. ChatGPT는 "No authentication"으로 연결.
     if (url.pathname.startsWith('/.well-known/')) {
       return new Response(null, { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // 브라우저 스모크 테스트
+    if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/test')) {
+      return new Response(TEST_PAGE, {
+        headers: { 'content-type': 'text/html; charset=utf-8', 'Access-Control-Allow-Origin': '*' },
+      });
     }
 
     const apiBase = (env.KB_WALLET_API_BASE || 'https://kb-stable-wallet-api-stage.vercel.app').replace(
@@ -180,3 +188,69 @@ export default {
     return handler(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;
+
+const TEST_PAGE = `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>stable-wallet MCP test</title>
+  <style>
+    body { font: 15px/1.45 ui-sans-serif, system-ui; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; color: #111; }
+    input, button, select { font: inherit; padding: 0.5rem 0.65rem; width: 100%; box-sizing: border-box; margin: 0.35rem 0 0.75rem; }
+    button { cursor: pointer; background: #111; color: #fff; border: 0; border-radius: 8px; }
+    pre { background: #f4f4f5; padding: 0.85rem; border-radius: 8px; overflow: auto; white-space: pre-wrap; }
+    label { font-weight: 650; }
+    .hint { color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>stable-wallet MCP</h1>
+  <p class="hint">MCP: <code>/mcp</code> · 연결 무인증 · 키는 도구 인자</p>
+  <label>API 키 (kbw_...)</label>
+  <input id="key" autocomplete="off" placeholder="kbw_..." />
+  <label>도구</label>
+  <select id="tool">
+    <option value="wallet_me">wallet_me</option>
+    <option value="wallet_kya_request">wallet_kya_request</option>
+    <option value="wallet_balances">wallet_balances</option>
+    <option value="wallet_merchants">wallet_merchants</option>
+  </select>
+  <button id="run" type="button">호출</button>
+  <pre id="out">결과</pre>
+  <script>
+    const mcp = location.origin + '/mcp';
+    async function rpc(method, params, id) {
+      const res = await fetch(mcp, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'accept': 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+      });
+      const text = await res.text();
+      const line = text.split('\\n').find((l) => l.startsWith('data: '));
+      if (!line) throw new Error(text || res.statusText);
+      return JSON.parse(line.slice(6));
+    }
+    document.getElementById('run').onclick = async () => {
+      const out = document.getElementById('out');
+      const apiKey = document.getElementById('key').value.trim();
+      const name = document.getElementById('tool').value;
+      out.textContent = '…';
+      try {
+        await rpc('initialize', {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'browser-test', version: '0' },
+        }, 1);
+        const result = await rpc('tools/call', { name, arguments: { apiKey } }, 2);
+        out.textContent = JSON.stringify(result, null, 2);
+      } catch (e) {
+        out.textContent = String(e && e.message ? e.message : e);
+      }
+    };
+  </script>
+</body>
+</html>`;
